@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #add8e6; /* Light blue background */
+            margin: 0;
+            font-family: Arial, sans-serif;
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            animation: slideIn 1s ease-in-out;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        .party {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .party span {
+            flex: 1;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .party button {
+            flex: 1;
+            margin-left: 10px;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .party button:hover {
+            transform: scale(1.05);
+            background-color: #45a049;
+        }
+
+        .voting-animation {
+            display: none;
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+            animation: popup 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); }
+            to { transform: translateY(0); }
+        }
+
+        @keyframes popup {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .popup-message {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.5;
+            animation: popup 0.5s ease-in-out;
+            backdrop-filter: blur(5px);
+            max-width: 300px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Vote for Your Party</h1>
+    <input type="hidden" id="voterId" value="<%= voterId %>">
+    <div class="party">
+        <span>Party A</span>
+        <button onclick="castVote('Party A')">Vote</button>
+    </div>
+    <div class="party">
+        <span>Party B</span>
+        <button onclick="castVote('Party B')">Vote</button>
+    </div>
+    <div class="party">
+        <span>Party C</span>
+        <button onclick="castVote('Party C')">Vote</button>
+    </div>
+
+    <div class="voting-animation" id="votingAnimation">
+        <img src="vote_done.gif" alt="Voting Done Animation">
+        <p>Voting Done!</p>
+    </div>
+</div>
+
+<div id="popupMessage" class="popup-message" style="display: none;">
+    Thank you for voting!<br>
+    Your voice is powerful,<br>
+    and together, we’re making<br>
+    great things happen. Let’s<br>
+    keep the good vibes going!
+</div>
+
+<script>
+    async function castVote(party) {
+        const voterId = document.getElementById('voterId').value;
+
+        const response = await fetch('/cast-vote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ voterId, party })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            const animation = document.getElementById('votingAnimation');
+            animation.style.display = 'block';
+
+            const popupMessage = document.getElementById('popupMessage');
+            popupMessage.style.display = 'block';
+
+            setTimeout(() => {
+                location.href = '/';
+            }, 3000);
+        } else {
+            alert('Failed to cast vote. Please try again.');
+        }
+    }
+</script>
+</body>
+</html>

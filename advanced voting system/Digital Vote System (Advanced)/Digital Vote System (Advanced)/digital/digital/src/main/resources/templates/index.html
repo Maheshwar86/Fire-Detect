@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login and Signup</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-image: url('https://res.cloudinary.com/duhki4wze/image/upload/v1739943877/itfsdp85smtpkedmdjpq.gif');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .container {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .button:hover {
+            transform: scale(1.1);
+            background-color: #d1d1d1;
+        }
+        .login-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .signup-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        h1 {
+            animation: fadeIn 2s ease-in-out, slideIn 2s ease-in-out;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        /* Keyframes for animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); }
+            to { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+<header class="container">
+    <h1>Voting System</h1>
+</header>
+<div class="container">
+    <button class="button login-btn" onclick="window.location.href='/login'">Login</button>
+    <button class="button signup-btn" onclick="window.location.href='/signup'">Signup</button>
+</div>
+</body>
+</html>

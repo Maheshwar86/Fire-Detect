@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #add8e6; /* Light blue background */
+            margin: 0;
+            font-family: Arial, sans-serif;
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            animation: slideIn 1s ease-in-out;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: #45a049;
+        }
+
+        #videoElement {
+            display: none;
+            width: 100px; /* Smaller width for video */
+            height: auto;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        #canvasElement {
+            display: none;
+        }
+
+        .verification-animation {
+            display: none;
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+
+        #loginButton {
+            display: none;
+        }
+
+        /* Keyframes for animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); }
+            to { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+<h1>Login Page</h1>
+<div class="container">
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="voterId">Voter ID:</label>
+            <input type="text" id="voterId" name="voterId" required>
+        </div>
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <button type="button" id="verifyButton" onclick="verifyVoterId()">Verify</button>
+        <button type="button" id="verifyFaceButton" onclick="startVerification()" style="display:none;">Verification</button>
+    </form>
+
+    <div class="verification-animation" id="verificationAnimation">
+        <img src="face_scan.gif" alt="Verification Animation">
+        <p>Verifying...</p>
+    </div>
+
+    <video id="videoElement" autoplay></video>
+    <canvas id="canvasElement"></canvas>
+    <button id="loginButton" onclick="location.href='/vote'">Login</button>
+    <div>
+        <h2>Verification Result:</h2>
+        <p id="verificationResult"></p>
+        <p id="confidenceScore"></p>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('videoElement');
+    const loginButton = document.getElementById('loginButton');
+    const verifyFaceButton = document.getElementById('verifyFaceButton');
+    const verificationResultElement = document.getElementById('verificationResult');
+    const confidenceScoreElement = document.getElementById('confidenceScore');
+
+    if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                video.srcObject = stream;
+            })
+            .catch(function(error) {
+                console.log("Something went wrong!");
+            });
+    }
+
+    async function verifyVoterId() {
+        const voterId = document.getElementById('voterId').value;
+        const name = document.getElementById('name').value;
+
+        const response = await fetch('/verify-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ voterId, name })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('Voter ID verified. Please proceed with facial verification.');
+            video.style.display = 'block';
+            verifyFaceButton.style.display = 'block';
+            document.getElementById('verificationAnimation').style.display = 'none';
+        } else {
+            alert('Voter ID not found. Please try again.');
+        }
+    }
+
+    async function startVerification() {
+        const canvas = document.getElementById('canvasElement');
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const photoData = canvas.toDataURL('image/png');
+        const voterId = document.getElementById('voterId').value;
+
+        const response = await fetch('/verify-photo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ voterId, photoData })
+        });
+
+        const result = await response.json();
+        if (result.verified) {
+            alert('Photo verified!');
+            loginButton.style.display = 'block';
+            verificationResultElement.textContent = 'Verification Result: Face verified';
+            confidenceScoreElement.textContent = `Confidence Score: ${result.confidence}`;
+        } else {
+            alert('Photo not verified.');
+            verificationResultElement.textContent = 'Verification Result: Face not verified';
+            confidenceScoreElement.textContent = `Confidence Score: ${result.confidence}`;
+            document.getElementById('verificationAnimation').style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>
