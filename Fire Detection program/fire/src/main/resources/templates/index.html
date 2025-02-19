@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Detect</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #ff4081, #81d4fa, #ffcc80);
+            animation: gradientAnimation 10s ease infinite;
+            background-size: 300% 300%;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;  /* Add scroll for smaller screens */
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff;
+            background: linear-gradient(45deg, #ff4081, #81d4fa);
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.5s ease;
+            margin-bottom: 20px;
+        }
+
+        .logo:hover {
+            transform: rotate(360deg);
+        }
+
+        .button {
+            padding: 10px 20px;
+            margin: 15px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .button:hover:not(:disabled) {
+            background-color: #0056b3;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            margin: 15px;
+            text-align: center;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .detection-result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: red;
+        }
+
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .image-container, .form-container {
+            flex: 1;
+            min-width: 250px;
+            margin-bottom: 20px;
+        }
+
+        img {
+            max-width: 100px;  /* Small preview size */
+            border: 2px solid #000;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .scanning-animation {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #ccc;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="logo">NHCE</div>
+        <button class="button" onclick="getLocation()">Get Location</button>
+    </div>
+    <div class="content">
+        <div class="form-container">
+            <form action="/saveData" method="post">
+                <input type="text" id="latitude" name="latitude" placeholder="Latitude" class="input-field" readonly>
+                <input type="text" id="longitude" name="longitude" placeholder="Longitude" class="input-field" readonly>
+                <input type="text" id="name" name="name" placeholder="Name" class="input-field">
+                <input type="text" id="areaName" name="areaName" placeholder="Area Name" class="input-field">
+                <input type="hidden" id="imageUrl" name="imageUrl">
+                <input type="submit" class="button" value="Send Data" id="sendDataButton" disabled>
+            </form>
+        </div>
+        <div class="image-container">
+            <button class="button" onclick="captureImage()">Capture Image</button>
+            <video id="video" width="320" height="240" autoplay style="display: none;"></video>
+            <img id="capturedImage" src="" alt="Captured Image" style="width: 100px; height: auto;">
+            <input type="file" id="uploadPhoto" accept="image/*" onchange="uploadPhoto(event)">
+            <button class="button" onclick="detectFire()">Detect Fire</button>
+            <div class="scanning-animation" id="scanningAnimation"></div>
+            <div id="detectionResult" class="detection-result"></div>
+            <button class="button" onclick="showGoogleLocation()">Google Location</button>
+        </div>
+    </div>
+</div>
+<script>
+    let videoStream;
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition, showError, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            });
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    }
+
+    function showPosition(position) {
+        document.getElementById("latitude").value = position.coords.latitude;
+        document.getElementById("longitude").value = position.coords.longitude;
+    }
+
+    function showError(error) {
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                alert("User denied the request for Geolocation.");
+                break;
+            case error.POSITION_UNAVAILABLE:
+                alert("Location information is unavailable.");
+                break;
+            case error.TIMEOUT:
+                alert("The request to get user location timed out.");
+                break;
+            case error.UNKNOWN_ERROR:
+                alert("An unknown error occurred.");
+                break;
+        }
+    }
+
+    async function captureImage() {
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        const videoOptions = { video: true };
+
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia(videoOptions);
+            video.srcObject = videoStream;
+            await video.play();
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageUrl = canvas.toDataURL('image/png');
+            document.getElementById("imageUrl").value = imageUrl;
+            document.getElementById("capturedImage").src = imageUrl;
+            document.getElementById("capturedImage").style.display = "block";
+        } catch (error) {
+            console.log("Error accessing camera: ", error);
+            alert("Error accessing camera: " + error.message);
+        } finally {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+        }
+    }
+
+    async function uploadPhoto(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imageUrl = e.target.result;
+            document.getElementById("imageUrl").value = imageUrl;
+            document.getElementById("capturedImage").src = imageUrl;
+            document.getElementById("capturedImage").style.display = "block";
+            document.getElementById("capturedImage").style.width = "100px"; // Set smaller size for preview
+            document.getElementById("capturedImage").style.height = "auto"; // Maintain aspect ratio
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function detectFire() {
+        const scanningAnimation = document.getElementById("scanningAnimation");
+        scanningAnimation.style.display = "block";
+        const imageUrl = document.getElementById("imageUrl").value;
+
+        try {
+            const response = await fetch("/detectFire", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ imageUrl: imageUrl })
+            });
+
+            const result = await response.json();
+            const detectionResult = document.getElementById("detectionResult");
+            const sendDataButton = document.getElementById("sendDataButton");
+
+            if (result.fireDetected) {
+                detectionResult.textContent = "Fire detected!";
+                sendDataButton.disabled = false;
+            } else {
+                detectionResult.textContent = "No fire detected.";
+                sendDataButton.disabled = true;
+            }
+        } catch (error) {
+            alert("Error detecting fire: " + error);
+        } finally {
+            scanningAnimation.style.display = "none";
+        }
+    }
+
+    function showGoogleLocation() {
+        const latitude = document.getElementById("latitude").value;
+        const longitude = document.getElementById("longitude").value;
+        if (latitude && longitude) {
+            const googleMapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+            window.open(googleMapsUrl, '_blank');
+        } else {
+            alert("Location is not available. Please get the location first.");
+        }
+    }
+
+    window.onload = function() {
+        const sendDataButton = document.getElementById("sendDataButton");
+        sendDataButton.disabled = true;
+    };
+</script>
+</body>
+</html>
